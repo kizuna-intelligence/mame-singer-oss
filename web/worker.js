@@ -29,7 +29,7 @@ self.mameProgress = (k, n) => postMessage({ progress: [k, n] });
 
 const step = (text) => postMessage({ loading: text });
 
-const MODEL_REPO = "https://huggingface.co/kizuna-intelligence/mame-singer/resolve/main/";
+const MODEL_REPO = "https://huggingface.co/kizuna-intelligence/mame-singer-oss/resolve/main/";
 const REPO_PATH = { "phonemes.json": "phonemes.json", "cons_dur.json": "cons_dur.json" };   // the rest are under onnx/
 
 // the models come from the model repository (its config.json is what counts a download there); if that cannot be
