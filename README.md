@@ -8,7 +8,6 @@
 
 ```sh
 pip install -r requirements.txt
-huggingface-cli login            # モデルは kizuna-intelligence/mame-singer-oss にあります
 python app.py                    # GUI（ブラウザで開きます）
 python sing.py --score examples/furusato.musicxml --voice my_voice.wav --out out.wav
 ```
@@ -17,6 +16,7 @@ python sing.py --score examples/furusato.musicxml --voice my_voice.wav --out out
 - 声: 話し声の録音を数秒〜。複数渡すと平均を取ります。
 - `--mode 1`（既定）は録音の声に近く、`--mode 0` はより歌声らしくなります。
 - GPU があれば `--device cuda` で速くなります。
+- モデルは初回に Hugging Face（kizuna-intelligence/mame-singer-oss）から自動で取得します。
 
 `web/` はブラウザ版（Pyodide と onnxruntime-web で動く）のソースです。
 
