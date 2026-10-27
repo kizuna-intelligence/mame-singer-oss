@@ -20,6 +20,18 @@ python sing.py --score examples/furusato.musicxml --voice my_voice.wav --out out
 
 `web/` はブラウザ版（Pyodide と onnxruntime-web で動く）のソースです。
 
+## クレジット
+
+mame-singer は次のモデルとコードを使っています。作者の方々に感謝します。
+
+| 使っているところ | 元 | 作者 | ライセンス |
+|---|---|---|---|
+| ボコーダ（メルスペクトログラム → 波形） | [NHVSing](https://github.com/wavtechyukky/NHVSing) | wavtechyukky | MIT |
+| F0 モデル、子音長モデル、楽譜の読み込みと音素長の処理 | [PrettyPitch](https://github.com/wavtechyukky/PrettyPitch) | wavtechyukky | MIT |
+| 声の特徴の抽出（参照エンコーダ） | [OpenVoice](https://github.com/myshell-ai/OpenVoice) | MyShell.ai | MIT |
+
+音響モデルと、このリポジトリのそれ以外のコードは Kizuna Intelligence が作りました。
+
 ## ライセンス
 
 Kizuna Intelligence が作った部分（このリポジトリのコードと音響モデル）は **CC BY 4.0**（`LICENSE`）です。再配布・改変・組み込みは自由ですが、次の表示を付けてください。
