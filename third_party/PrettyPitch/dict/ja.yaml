@@ -1,0 +1,70 @@
+# 言語パック: 日本語
+#
+# 音素インベントリ・核音素・歌詞→音素表は既存のリストファイルを **参照** する
+# （ここで重複定義しない）。それ以外の「リストでは表せない設定」だけをここに置く。
+#
+# 使い方:
+#   python -m duration_model.train --lang ja ...
+#   python -m svs.render score.ust --lang ja
+#   --phonemes / --nucleus / --mora_table を渡すと、その項目だけ上書きされる
+#   （例: --lang ja --phonemes dict/<独自>.phonemes で、音素表だけ差し替える）。
+
+phonemes: ja.phonemes          # dict/ からの相対パス。id = 行順、id 0 = pau
+# ピッチ（ノート）を担う核音素。母音 + 撥音 N。大文字は無声化母音で、有声フレームが
+# 無ければ代表値は近傍の核から補完される（configs の pitch.devoiced_fill）。
+# 11 語しかなく差し替える動機も無いので、ファイルを分けずここに直接書く。
+# 外部データセットで差し替えたいときは nucleus: <lang>.nucleus とファイル名も書ける。
+nucleus:  [a, i, u, e, o, A, I, U, E, O, N]
+mora:     ja.mora              # 歌詞（かな）→ 音素。SVS の楽譜読み取り用
+
+# 有声母音（プロファイルの母音 floor 用）
+vowels: [a, i, u, e, o]
+
+# 無声化母音 → 有声母音へ正規化（持続長モデルの id 空間を安定させる。同じ母音の変種なので）。
+# GlottalStop / Edge / EP はここで a に畳まない:
+#   GlottalStop / Edge はラベル上「母音(or pau) → GlottalStop|Edge → 母音」の並びで、
+#   母音の再アタック＝次の音節のオンセット。a に畳むと `a Edge i` が核 3 つになる。
+#   レシピが前処理で GlottalStop→cl に畳んでいるので、残るのは Edge で、
+#   これは核でも pau でもない＝子音（持続長の予測対象）として扱う。
+#   EP は一部の DB にある「末尾母音の独立ラベル」で、公開 DB には出ない。どの母音か
+#   分からないので a には畳めず、non_consonant_extra で「その他」にする。
+vowel_normalize:
+  A: a
+  I: i
+  U: u
+  E: e
+  O: o
+
+# 無音トークン（コンテキストのバリア）。正規化で pau に畳まれる。
+# PAU は日本語の音素表には無いが、大文字表記の外部データを取り違えないために入れてある。
+silence: [pau, PAU, sil, br, sp, AP, SP, vf, sli, R]
+
+# 前処理でラベル上の非正規な無音トークンを pau へ書き換える写像
+# （preprocess/lab.py の DEFAULT_SIL_MAP）。silence: とは役割が違うので別に持つ:
+#   silence  = 推論時に「無音として扱う」集合（判定用）
+#   sil_map  = 前処理で「この生ラベル記号を pau に書き換える」写像（正規化用）
+# Edge / GlottalStop は正規の音素なので畳まない。
+sil_map:
+  sil: pau
+  br:  pau
+  sp:  pau
+  sli: pau
+  vf:  pau
+
+# 子音（長さの予測対象）から外す追加記号。
+# br は無音、h_end / cl_end / EP は一部の DB だけにある語尾のラベル（公開 DB には出ないが、
+# LeapSinger と音素 id を揃えるため音素表には残してある）。
+# cl は **含めない** = 予測対象。長さが言語的に意味を持つため（「ぶく」vs「ぶっく」）。
+# Edge / GlottalStop も含めない = 母音間の再アタック（オンセット）なので予測対象。
+non_consonant_extra: [br, h_end, cl_end, EP]
+
+# 正規化の挙動
+case_fold: false               # 大小文字を畳まない（A/a は別音素）
+strip_stress_digits: false     # ストレス数字は付かない
+
+# 楽譜読み取り（svs/score_io.py）
+score:
+  rest_lyrics:    ["R", "r", "pau", "sil", "sp", "AP", "SP", "", "ー", "ｰ", "-", "+"]
+  melisma_lyrics: ["ー", "ｰ", "-", "+"]
+  melisma_vowel:  a             # 歌詞の無いノート/伸ばし棒で伸ばす既定母音
+  ust_encoding:   cp932         # UST の既定文字コード

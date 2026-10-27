@@ -1,0 +1,62 @@
+# 言語パック: 英語（ARPAbet）
+#
+# 英語で同梱しているのは、この音素表と正規化の設定だけ。歌詞→音素の表（mora）と
+# 学習済みウェイトは無い。英語 DB のレシピ（configs/recipes/<your_en_db>.yaml）に lang: en と書く。
+#
+#   python -m preprocess.run --recipe configs/recipes/<your_en_db>.yaml
+#   python -m duration_model.train --lang en ...
+#   python -m svs.render score.ust --lang en --mora_table <your table>
+#
+# 想定コーパス: NUS-48E（ラベルは小文字 ARPAbet・ストレス数字なし・sil/sp 付き）。
+# 他の英語コーパスが大文字やストレス数字（OW1）を使っていても、下の
+# case_fold / strip_stress_digits が正規化するのでそのまま読める。
+
+phonemes: en.phonemes
+# ピッチを担う核音素 = ARPAbet 母音 15（er を含む）。下の vowels と同じ集合だが、
+# 役割が違うので別項目にしてある（vowels は floor 用、nucleus はピッチ担当の判定）。
+nucleus:  [aa, ae, ah, ao, aw, ay, eh, er, ey, ih, iy, ow, oy, uh, uw, ax]
+# mora: 英語は書記素→音素が最長一致表では表せないため、汎用の表は用意しない
+#       （"shh" が sh + h に割れて KeyError になる）。デモ用の語彙限定表を使うときは
+#       svs.render --mora_table で明示的に渡す。一般の英語には G2P が要る。
+mora: null
+
+# 母音 = 核音素と同じ 16（ARPAbet 母音 15 + シュワー ax）。
+# 英語には無声化母音の区別が無いので vowels == nucleus。
+# ax はシュワー（弱母音）。NUS-48E には出現しない（シュワーも ah で書く）が、
+# 他の ARPAbet 系ラベルでは区別されるので核として入れてある。
+vowels: [aa, ae, ah, ao, aw, ay, eh, er, ey, ih, iy, ow, oy, uh, uw, ax]
+
+# 無声化母音→有声母音のような正規化は英語には不要
+vowel_normalize: {}
+
+# 無音トークン。NUS-48E の sil / sp はここで pau に畳まれるので、
+# レシピ側に phon_norm を書く必要はない（preprocess の DEFAULT_SIL_MAP と重なる）。
+silence: [pau, PAU, sil, sp, br, AP, SP]
+
+# 前処理でラベル上の無音トークンを pau へ書き換える写像。
+# NUS-48E のラベルは sil と sp を使う（sp はほぼ全て長さ0の語境界マーカーで、
+# read_lab の `e > s` 判定で先に落ちる。長さのある 9 件だけがここで pau になる）。
+sil_map:
+  sil: pau
+  sp:  pau
+  br:  pau
+
+# 子音から外す追加記号。英語には語尾変種を設けていない。
+non_consonant_extra: []
+
+# 近傍特徴で「核（母音的）」とみなす追加記号は英語には無い（日本語の cl に相当するものが無い）。
+# 音素表末尾の cl は破裂音前の閉鎖なので、子音として扱う（＝持続長の予測対象）。
+
+# 正規化の挙動
+case_fold: lower               # OW1 のような大文字表記も受ける
+strip_stress_digits: true      # CMUdict 系のストレス数字（AA1 → aa）を落とす
+
+# 楽譜読み取り（svs/score_io.py）
+score:
+  # 日本語の「ー」「ｰ」は英語では使わない。
+  rest_lyrics:    ["R", "r", "pau", "sil", "sp", "AP", "SP", ""]
+  # "-" は外してある: 英語の UST は音節ハイフン（twin- kle）を使うため、
+  # 伸ばし記号として解釈すると直前の母音を誤って伸ばしてしまう。"+" は UTAU 慣習なので残す。
+  melisma_lyrics: ["+"]
+  melisma_vowel:  ah            # 最頻母音（NUS-48E で 2,335 件）かつ中立母音
+  ust_encoding:   utf-8

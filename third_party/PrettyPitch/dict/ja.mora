@@ -1,0 +1,432 @@
+# 日本語のモーラ表（歌詞トークン → 音素）。PrettyPitch / LeapSinger 共通。
+#
+# 1 行 1 エントリ:  <モーラ>  <音素...>（空白区切り）
+# 先頭がノートに書く歌詞トークン（かな等）、以降がその音素。音素は音素表
+# （dict/ja.phonemes）に存在する必要がある。空行と # 以降は無視される。
+#
+# 読み取りは **最長一致**なので、並び順は動作に影響しない（五十音順は可読性のため）。
+# カタカナ = 無声化母音（大文字）、ひらがな = 有声。ひらがなとカタカナを並べてある。
+# 語彙を足すときはその行の末尾に追記すればよい。
+#
+# 他言語では、このファイルを複製して中身を差し替え、対応する音素表とともに
+# dict/<lang>.yaml の mora: から指す（英語のように最長一致で表せない言語は非対応）。
+
+# ── 無音・息 ──────────────────────────
+R    pau
+br   br
+pau  pau
+sil  sil
+息   br
+
+# ── あ行 ──────────────────────────────
+あ    a
+ア    A
+’あ  Edge a
+’ア  Edge A
+・あ  GlottalStop a
+・ア  GlottalStop A
+あ’  Edge a
+ア’  Edge A
+い    i
+イ    I
+’い  Edge i
+’イ  Edge I
+・い  GlottalStop i
+・イ  GlottalStop I
+い’  Edge i
+イ’  Edge I
+いぇ  y e
+う    u
+ウ    U
+’う  Edge u
+’ウ  Edge U
+・う  GlottalStop u
+・ウ  GlottalStop U
+う’  Edge u
+ウ’  Edge U
+うぃ  w i
+ウィ  w I
+うぅ  w u
+ウゥ  w U
+うぇ  w e
+ウェ  w E
+うぉ  w o
+ウォ  w O
+え    e
+エ    E
+’え  Edge e
+’エ  Edge E
+・え  GlottalStop e
+・エ  GlottalStop E
+え’  Edge e
+エ’  Edge E
+お    o
+オ    O
+’お  Edge o
+’オ  Edge O
+・お  GlottalStop o
+・オ  GlottalStop O
+お’  Edge o
+オ’  Edge O
+
+# ── か行 ──────────────────────────────
+か    k a
+カ    k A
+き    k i
+キ    k I
+きぇ  ky e
+キェ  ky E
+きゃ  ky a
+キャ  ky A
+きゅ  ky u
+キュ  ky U
+きょ  ky o
+キョ  ky O
+く    k u
+ク    k U
+くぁ  k w a
+クァ  k w A
+くぃ  k w i
+クィ  k w I
+くぅ  k w u
+クゥ  k w U
+くぇ  k w e
+クェ  k w E
+くぉ  k w o
+クォ  k w O
+け    k e
+ケ    k E
+こ    k o
+コ    k O
+
+# ── が行 ──────────────────────────────
+が    g a
+ガ    g A
+ぎ    g i
+ギ    g I
+ぎぇ  gy e
+ギェ  gy E
+ぎゃ  gy a
+ギャ  gy A
+ぎゅ  gy u
+ギュ  gy U
+ぎょ  gy o
+ギョ  gy O
+ぐ    g u
+グ    g U
+ぐぁ  g w a
+グァ  g w A
+ぐぃ  g w i
+グィ  g w I
+ぐぅ  g w u
+グゥ  g w U
+ぐぇ  g w e
+グェ  g w E
+ぐぉ  g w o
+グォ  g w O
+ぐゎ  g w a
+グヮ  g w A
+げ    g e
+ゲ    g E
+ご    g o
+ゴ    g O
+
+# ── さ行 ──────────────────────────────
+さ    s a
+サ    s A
+し    sh i
+シ    sh I
+しぃ  s i
+シィ  s I
+しぇ  sh e
+シェ  sh E
+しゃ  sh a
+シャ  sh A
+しゅ  sh u
+シュ  sh U
+しょ  sh o
+ショ  sh O
+す    s u
+ス    s U
+すぃ  s i
+スィ  s I
+せ    s e
+セ    s E
+そ    s o
+ソ    s O
+
+# ── ざ行 ──────────────────────────────
+ざ    z a
+ザ    z A
+じ    j i
+ジ    j I
+じぇ  j e
+ジェ  j E
+じゃ  j a
+ジャ  j A
+じゅ  j u
+ジュ  j U
+じょ  j o
+ジョ  j O
+ず    z u
+ズ    z U
+ずぃ  z i
+ズィ  z I
+ぜ    z e
+ゼ    z E
+ぞ    z o
+ゾ    z O
+
+# ── た行 ──────────────────────────────
+た      t a
+タ      t A
+ち      ch i
+チ      ch I
+ちぇ    ch e
+チェ    ch E
+ちゃ    ch a
+チャ    ch A
+ちゅ    ch u
+チュ    ch U
+ちょ    ch o
+チョ    ch O
+つ      ts u
+ツ      ts U
+つぁ    ts a
+ツァ    ts A
+つぃ    ts i
+ツィ    ts I
+つぇ    ts e
+ツェ    ts E
+つぉ    ts o
+ツォ    ts O
+て      t e
+テ      t E
+てぃ    t i
+ティ    t I
+てぃぇ  ty e
+ティェ  ty E
+てぇ    ty e
+テェ    ty E
+てゃ    ty a
+テャ    ty A
+てゅ    ty u
+テュ    ty U
+てょ    ty o
+テョ    ty O
+と      t o
+ト      t O
+とぅ    t u
+トゥ    t U
+
+# ── だ行 ──────────────────────────────
+だ    d a
+ダ    d A
+ぢ    j i
+ヂ    j I
+ぢぇ  j e
+ヂェ  j E
+ぢゃ  j a
+ヂャ  j A
+ぢゅ  j u
+ヂュ  j U
+ぢょ  j o
+ヂョ  j O
+づ    z u
+ヅ    z U
+ヅァ  z A
+づぃ  z i
+ヅィ  z I
+づぇ  z e
+ヅェ  z E
+づぉ  z o
+ヅォ  z O
+で    d e
+デ    d E
+でぃ  d i
+ディ  d I
+でぇ  dy e
+でゃ  dy a
+デャ  dy A
+でゅ  dy u
+デュ  dy U
+でょ  dy o
+デョ  dy O
+ど    d o
+ド    d O
+どぅ  d u
+ドゥ  d U
+
+# ── な行 ──────────────────────────────
+な    n a
+ナ    n A
+に    n i
+ニ    n I
+にぇ  ny e
+ニェ  ny E
+にゃ  ny a
+ニャ  ny A
+にゅ  ny u
+ニュ  ny U
+にょ  ny o
+ニョ  ny O
+ぬ    n u
+ヌ    n U
+ね    n e
+ネ    n E
+の    n o
+ノ    n O
+
+# ── は行 ──────────────────────────────
+は      h a
+ハ      h A
+ひ      h i
+ヒ      h I
+ひぇ    hy e
+ヒェ    hy E
+ひゃ    hy a
+ヒャ    hy A
+ひゅ    hy u
+ヒュ    hy U
+ひょ    hy o
+ヒョ    hy O
+ふ      f u
+フ      f U
+ふぁ    f a
+ファ    f A
+ふぃ    f i
+フィ    f I
+ふぃぇ  fy e
+フィェ  fy E
+ふぇ    f e
+フェ    f E
+ふぉ    f o
+フォ    f O
+ふゃ    fy a
+フャ    fy A
+ふゅ    fy u
+フュ    fy U
+ふょ    fy o
+フョ    fy O
+へ      h e
+ヘ      h E
+ほ      h o
+ホ      h O
+
+# ── ば行 ──────────────────────────────
+ば    b a
+バ    b A
+び    b i
+ビ    b I
+びぇ  by e
+ビェ  by E
+びゃ  by a
+ビャ  by A
+びゅ  by u
+ビュ  by U
+びょ  by o
+ビョ  by O
+ぶ    b u
+ブ    b U
+べ    b e
+ベ    b E
+ぼ    b o
+ボ    b O
+
+# ── ぱ行 ──────────────────────────────
+ぱ    p a
+パ    p A
+ぴ    p i
+ピ    p I
+ぴぇ  py e
+ピェ  py E
+ぴゃ  py a
+ピャ  py A
+ぴゅ  py u
+ピュ  py U
+ぴょ  py o
+ピョ  py O
+ぷ    p u
+プ    p U
+ぺ    p e
+ペ    p E
+ぽ    p o
+ポ    p O
+
+# ── ま行 ──────────────────────────────
+ま    m a
+マ    m A
+み    m i
+ミ    m I
+みぇ  my e
+ミェ  my E
+みゃ  my a
+ミャ  my A
+みゅ  my u
+ミュ  my U
+みょ  my o
+ミョ  my O
+む    m u
+ム    m U
+め    m e
+メ    m E
+も    m o
+モ    m O
+
+# ── や行 ──────────────────────────────
+や  y a
+ヤ  y A
+ゆ  y u
+ユ  y U
+よ  y o
+ヨ  y O
+
+# ── ら行 ──────────────────────────────
+ら    r a
+ラ    r A
+り    r i
+リ    r I
+りぇ  ry e
+りゃ  ry a
+りゅ  ry u
+りょ  ry o
+る    r u
+ル    r U
+れ    r e
+レ    r E
+ろ    r o
+ロ    r O
+
+# ── わ行 ──────────────────────────────
+わ  w a
+ワ  w A
+ゐ  i
+ヰ  I
+ゑ  e
+ヱ  E
+を  o
+ヲ  O
+
+# ── ゔ（v） ───────────────────────────
+ゔ    v u
+ヴ    v u
+ヴぁ  v a
+ヴァ  v A
+ヴぃ  v i
+ヴぅ  v u
+ヴゥ  v U
+ヴぇ  v e
+ヴェ  v E
+ヴぉ  v o
+ヴォ  v O
+ヴゅ  vy u
+ヴュ  vy U
+
+# ── ん・促音 ──────────────────────────
+っ    cl
+ッ    cl
+ん    N
+ン    N
+’ん  Edge N
+・ん  GlottalStop N
+ん’  Edge N
