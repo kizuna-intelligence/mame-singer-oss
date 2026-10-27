@@ -27,7 +27,12 @@ app_file: index.html
 license: cc-by-4.0
 ---
 
-話し声を数秒録音するだけで、その声で歌わせる歌声合成です。楽譜はブラウザの上で作れて、MusicXML や UTAU の .ust も開けます。計算はすべてブラウザの中で行います。
+話し声を数秒録音するだけで、その声で歌わせる歌声合成です。楽譜はブラウザの上で作れて、MusicXML・UTAU・OpenUtau・MIDI・VOCALOID・Synthesizer V・CeVIO の楽譜も開けます。計算はすべてブラウザの中で行います。
+
+- ソースコード: https://github.com/kizuna-intelligence/mame-singer-oss
+- モデル: https://huggingface.co/kizuna-intelligence/mame-singer
+
+改造や再配布をする場合は、ライセンスに従ってください。
 
 ライセンス: Kizuna Intelligence が作った部分（音響モデル `models/acoustic.onnx` とページのコード）は CC BY 4.0（`LICENSE`）。再配布・改変時は「mame-singer（Kizuna Intelligence） https://huggingface.co/spaces/kizuna-intelligence/mame-singer」の表示が必要で、守られない場合は CC BY 4.0 第 6 条により許諾が終了します。F0・子音長モデルと楽譜処理（`py.zip` の PrettyPitch 部分）、ボコーダ、声の特徴の抽出は、それぞれの MIT License（`LICENSE-*`）です。
 """
