@@ -1,0 +1,9 @@
+torch
+numpy
+scipy
+pyyaml
+librosa
+soundfile
+onnxruntime
+huggingface_hub
+gradio
