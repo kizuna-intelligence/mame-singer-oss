@@ -91,7 +91,9 @@
   .level { height: 4px; border-radius: 2px; background: var(--line); margin-top: 8px; overflow: hidden; display: none; }
   .level i { display: block; height: 100%; width: 0; background: var(--bad); }
   .clips { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .clips li { display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 8px; padding: 6px 8px; }
+  .clips li { display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 8px; padding: 6px 8px; position: relative; overflow: hidden; }
+  .clips li .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent); }
+  .clips li.playing { box-shadow: inset 0 0 0 1px var(--accent); }
   .clips .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .clips .sec { color: var(--muted); font-size: 12px; }
   .clips button { border: 0; background: none; color: var(--muted); padding: 2px 6px; border-radius: 6px; }
@@ -109,6 +111,10 @@
   input[type=range] { width: 100%; accent-color: var(--accent); }
   .go { width: 100%; border: 0; border-radius: 10px; padding: 12px; background: var(--accent); color: var(--accent-fg); font-weight: 700; font-size: 15px; margin-top: 4px; }
   .go:disabled { opacity: .45; cursor: default; }
+  .go.working:disabled { opacity: .8; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
   .progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 10px; display: none; }
   .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   .msg { font-size: 12px; margin-top: 8px; color: var(--muted); min-height: 1em; }
@@ -273,8 +279,6 @@
   <div style="text-align:right;margin-top:12px"><button class="btn" id="helpClose">閉じる</button></div>
 </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
 <script src="editor.js"></script>
 <script src="app.js"></script>
 </body>

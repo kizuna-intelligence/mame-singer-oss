@@ -2,13 +2,31 @@
 // score front end (mame_web.py), onnxruntime-web runs the networks. Nothing leaves the browser.
 const TPB = PianoRoll.TPB;
 const MODELS = ["acoustic", "voice_encoder", "f0_cond", "f0_denoise", "vocoder"];
-const DATA = ["f0.json", "cons_dur.npz", "cons_dur_config.json", "cons_dur.json", "phonemes.json"];
 const STORE = "mame-singer/score/v1";
 const SCORE_RE = /\.(musicxml|xml|mxl|ust|ustx|mid|midi|vsq|vsqx|vpr|svp|s5p|ccs|json)$/i;
 const $ = (id) => document.getElementById(id);
 
 const app = { py: null, ready: false, busy: false, voices: [], mode: 1, style: 0, result: null, pendingOpen: null, acc: null, vocal: null };
-const sessions = {};
+// the singer runs in a worker (worker.js); call(cmd, args) -> Promise of its result
+const worker = new Worker("worker.js");
+const pending = new Map();
+let nextCall = 1;
+worker.onmessage = (e) => {
+  const m = e.data;
+  if (m.progress) { onProgress(...m.progress); return; }
+  if (m.loading) { onLoading(m.loading); return; }
+  const p = pending.get(m.id);
+  if (!p) return;
+  pending.delete(m.id);
+  m.ok ? p.resolve(m.result) : p.reject(new Error(m.error));
+};
+function call(cmd, args = {}, transfer = []) {
+  return new Promise((resolve, reject) => {
+    const id = nextCall++;
+    pending.set(id, { resolve, reject });
+    worker.postMessage({ id, cmd, args }, transfer);
+  });
+}
 
 // ── status ─────────────────────────────────────────────────────────────
 function status(text, kind = "", frac = null) {
@@ -97,9 +115,7 @@ async function openScore(name, bytes) {
   }
   if (!app.ready) { app.pendingOpen = [name, bytes]; message(`準備ができたら ${name} を開きます…`); return; }
   try {
-    const path = `/tmp/open.${ext}`;
-    app.py.FS.writeFile(path, bytes);
-    const res = JSON.parse(app.py.globals.get("read_js")(path));
+    const res = await call("read", { name, bytes });
     if (!res.notes.length) { message("歌詞の付いたノートが見つかりませんでした。", true); return; }
     load(res, true);
     message(`${name} を開きました（ノート ${res.notes.length} 個、テンポ ${Math.round(res.bpm * 100) / 100}）。` +
@@ -374,13 +390,27 @@ function renderClips() {
   ul.innerHTML = "";
   app.voices.forEach((v, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<button title="聞く">▶</button><span class="name"></span><span class="sec">${v.sec.toFixed(1)} 秒</span><button title="外す">✕</button>`;
+    li.innerHTML = `<button title="聞く">▶</button><span class="name"></span><span class="sec">${v.sec.toFixed(1)} 秒</span><button title="外す">✕</button><i class="bar"></i>`;
     li.querySelector(".name").textContent = v.name;
     const [play, del] = li.querySelectorAll("button");
-    play.addEventListener("click", () => { const a = new Audio(v.url); a.play(); });
+    play.addEventListener("click", () => previewClip(v.url, li, play));
     del.addEventListener("click", () => { URL.revokeObjectURL(v.url); app.voices.splice(i, 1); renderClips(); refresh(); });
     ul.appendChild(li);
   });
+}
+let clipAudio = null;
+function previewClip(url, li, btn) {
+  const was = clipAudio && clipAudio.li === li;
+  if (clipAudio) { clipAudio.a.pause(); clipAudio.done(); }
+  if (was) return;
+  const a = new Audio(url), bar = li.querySelector(".bar");
+  const done = () => { li.classList.remove("playing"); btn.textContent = "▶"; bar.style.width = "0"; cancelAnimationFrame(raf); clipAudio = null; };
+  let raf = 0;
+  const tick = () => { if (a.duration) bar.style.width = `${(a.currentTime / a.duration) * 100}%`; raf = requestAnimationFrame(tick); };
+  a.addEventListener("ended", done);
+  clipAudio = { a, li, done };
+  li.classList.add("playing"); btn.textContent = "■";
+  a.play(); tick();
 }
 $("pickBtn").addEventListener("click", () => $("voiceFile").click());
 $("voiceFile").addEventListener("change", async (e) => {
@@ -445,11 +475,11 @@ $("key").addEventListener("input", (e) => { const v = Number(e.target.value); $(
 // ── lyric check (red notes) ────────────────────────────────────────────
 let checkTimer = 0;
 function scheduleCheck() { clearTimeout(checkTimer); checkTimer = setTimeout(check, 300); }
-function check() {
+async function check() {
   if (!app.ready) return [];
   const s = roll.sorted();
-  const bad = JSON.parse(app.py.globals.get("check_js")(JSON.stringify(s.map((n) => ({ lyric: n.lyric })))));
-  const map = new Map(bad.map(([i, msg]) => [s[i].id, msg]));
+  const bad = await call("check", { notes: JSON.stringify(s.map((n) => ({ lyric: n.lyric }))) });
+  const map = new Map(bad.filter(([i]) => s[i]).map(([i, msg]) => [s[i].id, msg]));
   roll.setBad(map);
   return [...map.entries()];
 }
@@ -457,30 +487,21 @@ function check() {
 function refresh() {
   const go = $("goBtn");
   go.disabled = !app.ready || app.busy || !roll.notes.length || !app.voices.length;
-  go.textContent = !app.ready ? "準備しています…" : app.busy ? "歌っています…" : !roll.notes.length ? "楽譜にノートを置いてください" : !app.voices.length ? "声を入れてください" : "歌わせる";
+  go.classList.toggle("working", app.busy || !app.ready);
+  go.innerHTML = (app.busy || !app.ready ? '<span class="spin"></span>' : "") + (!app.ready ? "準備しています…" : app.busy ? "歌っています…" : !roll.notes.length ? "楽譜にノートを置いてください" : !app.voices.length ? "声を入れてください" : "歌わせる");
   $("undoBtn").disabled = !roll.undoStack.length;
   $("redoBtn").disabled = !roll.redoStack.length;
   $("delBtn").disabled = !roll.sel.size;
 }
 
 // ── singing ────────────────────────────────────────────────────────────
-window.mameRun = async (name, spec) => {
-  const feeds = {};
-  for (const [key, dtype, shape, bytes] of spec) {
-    const buf = bytes.slice().buffer;
-    feeds[key] = dtype === "int64" ? new ort.Tensor("int64", new BigInt64Array(buf), Array.from(shape))
-      : new ort.Tensor("float32", new Float32Array(buf), Array.from(shape));
-  }
-  const res = await sessions[name].run(feeds);
-  return Object.entries(res).map(([key, t]) => [key, Array.from(t.dims), new Uint8Array(t.data.buffer, t.data.byteOffset, t.data.byteLength)]);
-};
-window.mameProgress = (k, n) => {
+function onProgress(k, n) {
   $("progress").firstChild.style.width = `${Math.round((k / n) * 100)}%`;
   message(`歌っています… ${k} / ${n} フレーズ`);
-};
+}
 
 $("goBtn").addEventListener("click", async () => {
-  const bad = check();
+  const bad = await check();
   if (bad.length) {
     message(`読めない歌詞が ${bad.length} か所あります（赤いノート）。ひらがなで書いてください。 <button id="showBad">最初のノートへ</button>`, true, true);
     $("showBad").addEventListener("click", () => roll.editLyric(roll.byId(bad[0][0])));
@@ -492,13 +513,10 @@ $("goBtn").addEventListener("click", async () => {
   message("声の特徴を取り出しています…");
   const t0 = performance.now();
   try {
-    const sing = app.py.globals.get("sing_js");
-    const voices = app.py.toPy(app.voices.map((v) => v.pcm));
     const tempo = bpm();
-    const res = await sing(JSON.stringify(scoreNotes()), tempo, voices, app.mode, Number($("key").value), app.style);
-    const [bytes, offset] = res.toJs ? res.toJs() : res;
-    res.destroy?.(); voices.destroy?.();
-    const f32 = new Float32Array(bytes.slice().buffer);
+    const { buffer, offset } = await call("sing", { notes: JSON.stringify(scoreNotes()), bpm: tempo, voices: app.voices.map((v) => v.pcm),
+      mode: app.mode, transpose: Number($("key").value), style: app.style });
+    const f32 = new Float32Array(buffer);
     app.vocal = { f32, offset, bpm: tempo };
     app.result = null;
     remix();
@@ -527,6 +545,11 @@ function wav(chs, sr) {
 }
 
 // ── start ──────────────────────────────────────────────────────────────
+let loaded = 0;
+function onLoading(kind) {
+  loaded++;
+  status(kind === "python" ? "Python を準備しています…" : "モデルを読み込んでいます…", "", Math.min(0.95, loaded / (MODELS.length + 2)));
+}
 async function fetchBytes(path) {
   const r = await fetch(path);
   if (!r.ok) throw new Error(`${path}: ${r.status}`);
@@ -540,65 +563,9 @@ async function init() {
   else load(await (await fetch("examples/furusato.json")).json());
   updateCounts(); refresh();
   try {
-    ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
-    let done = 0;
-    const steps = MODELS.length + 3;
-    const tickLoad = (t) => status(t, "", ++done / steps);
-    status("モデルを読み込んでいます…", "", 0);
-    const pyP = (async () => {
-      const py = await loadPyodide();
-      tickLoad("Python を準備しています…");
-      await py.loadPackage(["numpy", "scipy", "pyyaml"]);
-      tickLoad("Python を準備しています…");
-      return py;
-    })();
-    await Promise.all(MODELS.map(async (m) => {
-      sessions[m] = await ort.InferenceSession.create(await fetchBytes(`models/${m}.onnx`), { executionProviders: ["wasm"] });
-      tickLoad("モデルを読み込んでいます…");
-    }));
-    const py = await pyP;
-    py.unpackArchive((await fetchBytes("py.zip")).buffer, "zip", { extractDir: "/home/pyodide/mame" });
-    const files = {};
-    for (const f of DATA) files[f] = await fetchBytes(`models/${f}`);
-    py.globals.set("_files", py.toPy(files));
-    await py.runPythonAsync(`
-import sys, json
-sys.path[:0] = ["/home/pyodide/mame"]
-import numpy as np
-from pyodide.ffi import to_js
-import js
-from mame_web import WebSinger, Bridge, read_score
-
-def _b(v):
-    return v.to_bytes() if hasattr(v, "to_bytes") else bytes(v)
-
-async def _run(name, feeds):
-    spec = [[k, str(v.dtype), list(v.shape), to_js(np.ascontiguousarray(v).tobytes())] for k, v in feeds.items()]
-    res = await js.mameRun(name, to_js(spec))
-    out = {}
-    for item in res:
-        key, dims, data = item[0], list(item[1].to_py()), item[2]
-        out[key] = np.frombuffer(data.to_bytes(), np.float32).reshape(dims)
-    return out
-
-singer = WebSinger(Bridge(_run), {k: _b(v) for k, v in _files.items()})
-del _files
-
-def read_js(path):
-    notes, bpm, changes = read_score(path)
-    return json.dumps({"notes": notes, "bpm": bpm, "changes": changes}, ensure_ascii=False)
-
-def check_js(notes):
-    return json.dumps(singer.check(json.loads(notes)), ensure_ascii=False)
-
-async def sing_js(notes, bpm, voices, mode, transpose, style):
-    emb = await singer.voice([np.frombuffer(_b(v), np.float32) for v in voices])
-    y, offset = await singer.sing_notes(json.loads(notes), float(bpm), emb, int(mode), int(transpose), int(style),
-                                        progress=js.mameProgress)
-    return to_js([to_js(np.clip(y, -1, 1).astype(np.float32).tobytes()), float(offset)])
-`);
-    tickLoad("準備ができました");
-    app.py = py; app.ready = true;
+    status("モデルを読み込んでいます…", "", 0.02);
+    await call("init", { base: new URL(".", location.href).href });
+    app.ready = true;
     status("準備ができました", "ready", 1);
     if (app.pendingOpen) { const [n, b] = app.pendingOpen; app.pendingOpen = null; openScore(n, b); }
     scheduleCheck(); refresh();

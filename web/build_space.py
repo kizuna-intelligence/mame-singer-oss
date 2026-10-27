@@ -40,7 +40,7 @@ def main():
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    for f in ("index.html", "app.js", "editor.js"):
+    for f in ("index.html", "app.js", "editor.js", "worker.js"):
         shutil.copy(HERE / f, out / f)
     with zipfile.ZipFile(out / "py.zip", "w", zipfile.ZIP_DEFLATED) as z:
         z.write(HERE / "mame_web.py", "mame_web.py")
