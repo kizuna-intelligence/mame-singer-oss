@@ -12,7 +12,7 @@ from .voice import VoiceEncoder
 SR = 44100
 PP = Path(__file__).resolve().parents[1] / "third_party" / "PrettyPitch"
 REPO = "kizuna-intelligence/mame-singer"
-FILES = ("acoustic.pt", "voice_encoder.pt", "vocoder.onnx", "f0.pt", "cons_dur.pt", "cons_dur.json", "phonemes.json")
+FILES = ("config.json", "acoustic.pt", "voice_encoder.pt", "vocoder.onnx", "f0.pt", "cons_dur.pt", "cons_dur.json", "phonemes.json")
 
 
 def download(repo=REPO, token=None):

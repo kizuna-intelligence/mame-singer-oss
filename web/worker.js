@@ -29,6 +29,19 @@ self.mameProgress = (k, n) => postMessage({ progress: [k, n] });
 
 const step = (text) => postMessage({ loading: text });
 
+const MODEL_REPO = "https://huggingface.co/kizuna-intelligence/mame-singer/resolve/main/";
+const REPO_PATH = { "phonemes.json": "phonemes.json", "cons_dur.json": "cons_dur.json" };   // the rest are under onnx/
+
+// the models come from the model repository (its config.json is what counts a download there); if that cannot be
+// reached, from the copy inside this Space
+async function modelSource(base) {
+  try {
+    const r = await fetch(`${MODEL_REPO}config.json`, { cache: "no-store" });
+    if (r.ok) return (f) => `${MODEL_REPO}${REPO_PATH[f] || `onnx/${f}`}`;
+  } catch (e) { /* offline or blocked: use the Space's copy */ }
+  return (f) => `${base}models/${f}`;
+}
+
 async function init(base) {
   ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
   ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
@@ -39,14 +52,15 @@ async function init(base) {
     step("python");
     return p;
   })();
+  const src = await modelSource(base);
   await Promise.all(MODELS.map(async (m) => {
-    sessions[m] = await ort.InferenceSession.create(await fetchBytes(`${base}models/${m}.onnx`), { executionProviders: ["wasm"] });
+    sessions[m] = await ort.InferenceSession.create(await fetchBytes(src(`${m}.onnx`)), { executionProviders: ["wasm"] });
     step("model");
   }));
   py = await pyP;
   py.unpackArchive((await fetchBytes(`${base}py.zip`)).buffer, "zip", { extractDir: "/home/pyodide/mame" });
   const files = {};
-  for (const f of DATA) files[f] = await fetchBytes(`${base}models/${f}`);
+  for (const f of DATA) files[f] = await fetchBytes(src(f));
   py.globals.set("_files", py.toPy(files));
   await py.runPythonAsync(`
 import sys, json
